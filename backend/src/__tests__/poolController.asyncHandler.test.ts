@@ -10,6 +10,8 @@ const mockQuery = jest.fn<
 
 jest.unstable_mockModule("../db/connection.js", () => ({
   query: mockQuery,
+  getClient: jest.fn<() => Promise<any>>().mockResolvedValue({ query: mockQuery, release: jest.fn() }),
+  closePool: jest.fn(),
 }));
 
 const { getPoolStats, getDepositorPortfolio } = await import(

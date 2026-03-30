@@ -176,7 +176,7 @@ export const submitRemittanceTransaction = asyncHandler(
           id,
           "failed",
           undefined,
-          error instanceof Error ? error.message : "Unknown error"
+          error instanceof Error ? (error as Error).message : "Unknown error"
         );
       }
 

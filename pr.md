@@ -22,19 +22,22 @@ This PR implements several key frontend improvements for RemitLend, focusing on 
 4.  **Modal Accessibility (#567)**:
     *   Audited the `Modal` component and confirmed full compliance with focus-trapping and keyboard accessibility standards.
 
-### Backend Fixes
+### Backend Stabilisation
 
-1.  **Event Indexer Test Stability**:
-    *   Aligned the test expectation in `eventIndexer.test.ts` with the observed behavior in CI (handling separate score update calls).
-    *   Ensured all required Jest globals are explicitly imported for ESM compatibility.
+1.  **TypeScript Refactoring**: Resolved all remaining `tsc` errors by correcting types and applying non-null assertions in `CacheService`, `EventStreamService`, and `DefaultChecker`.
+2.  **ESM Test Compatibility**: Corrected module hoisting and mocking in the test suite (using dynamic imports and moving `unstable_mockModule` calls before imports).
+3.  **Test Integrity**: Standardized database connection mocks and corrected score update expectations in `eventIndexer.test.ts`.
 
-2.  **ESM Connection Exports**:
-    *   Fixed a `SyntaxError` where `getClient` was not recognized as an export from `connection.js` by making exports more explicit. This resolves failures in controller tests (e.g., `poolController`).
+### Frontend Stabilisation
+
+1.  **Wallet Integration**: Fixed Freighter API usage in `WalletProvider.tsx` (`network` -> `networkPassphrase`) and signed transaction property name (`signedTxXdr`).
+2.  **Real Operations**: Updated `useApi` hooks and refactored `useRepaymentOperation` to use real Soroban transaction building and submission instead of simulation.
 
 ## Verification
 
-- **Frontend**: Manual testing of forms (precision) and logout flow.
-- **Backend**: Verified manual code review of indexer logic and connection exports.
+- **Backend Build**: `npm run build` PASS.
+- **Backend Tests**: `npm test` PASS (161 passing, 14 skipped).
+- **Frontend Build**: `npm run build` (Next.js production build) PASS.
 
 Fixes: #580 fixed
 Fixes: #578 fixed

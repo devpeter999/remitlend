@@ -31,6 +31,7 @@ export interface Remittance {
   memo?: string;
   status: "pending" | "processing" | "completed" | "failed";
   transactionHash?: string;
+  errorMessage?: string;
   xdr?: string;
   createdAt: string;
   updatedAt: string;
@@ -177,6 +178,7 @@ export const remittanceService = {
         memo: r.memo,
         status: r.status,
         transactionHash: r.transaction_hash,
+        errorMessage: r.error_message,
         xdr: r.xdr,
         createdAt: r.created_at.toISOString(),
         updatedAt: r.updated_at.toISOString(),
@@ -212,6 +214,7 @@ export const remittanceService = {
       memo: r.memo,
       status: r.status,
       transactionHash: r.transaction_hash,
+      errorMessage: r.error_message,
       xdr: r.xdr,
       createdAt: r.created_at.toISOString(),
       updatedAt: r.updated_at.toISOString(),
@@ -221,14 +224,15 @@ export const remittanceService = {
   async updateRemittanceStatus(
     id: string,
     status: "processing" | "completed" | "failed",
-    transactionHash?: string
+    transactionHash?: string,
+    errorMessage?: string
   ): Promise<Remittance> {
     const result = await query(
       `UPDATE remittances 
-       SET status = $1, transaction_hash = $2, updated_at = $3
-       WHERE id = $4
+       SET status = $1, transaction_hash = $2, error_message = $3, updated_at = $4
+       WHERE id = $5
        RETURNING *`,
-      [status, transactionHash || null, new Date().toISOString(), id]
+      [status, transactionHash || null, errorMessage || null, new Date().toISOString(), id]
     );
 
     if (!result.rows[0]) throw AppError.notFound("Remittance not found");
@@ -245,6 +249,7 @@ export const remittanceService = {
       memo: r.memo,
       status: r.status,
       transactionHash: r.transaction_hash,
+      errorMessage: r.error_message,
       xdr: r.xdr,
       createdAt: r.created_at.toISOString(),
       updatedAt: r.updated_at.toISOString(),

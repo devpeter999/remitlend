@@ -81,23 +81,34 @@ class EventStreamService {
     const all = new Set<SseClient>();
     for (const clients of borrowerClients.values()) {
       for (const client of clients) {
-        all.add(client);
+        all.add(client.res);
       }
     }
     for (const client of adminClients) {
-      all.add(client);
+      all.add(client.res);
     }
     return all;
   }
 
   private removeClient(res: SseClient): void {
     for (const [borrower, clients] of borrowerClients) {
-      clients.delete(res);
+      // Find the ClientInfo with this res and delete it
+      for (const ci of clients) {
+        if (ci.res === res) {
+          clients.delete(ci);
+          break;
+        }
+      }
       if (clients.size === 0) {
         borrowerClients.delete(borrower);
       }
     }
-    adminClients.delete(res);
+    for (const ci of adminClients) {
+      if (ci.res === res) {
+        adminClients.delete(ci);
+        break;
+      }
+    }
     for (const [userKey, clients] of userClients) {
       clients.delete(res);
       if (clients.size === 0) {
@@ -106,7 +117,13 @@ class EventStreamService {
     }
   }
 
-  sendEvent(res: SseClient, event: LoanEventPayload): void {
+  sendEvent(res: SseClient, event: LoanEventPayload, userKey?: string, borrower?: string): void {
+    // Basic verification if both are provided
+    if (userKey && borrower && userKey !== borrower) {
+       // Should not happen if subscription logic is correct, but add as safety
+       return;
+    }
+
     const payload =
       `id: ${event.eventId}\n` +
       `event: loan-event\n` +
@@ -170,9 +187,17 @@ class EventStreamService {
     });
 
     return () => {
-      borrowerClients.get(borrower)?.delete(clientInfo);
-      if (borrowerClients.get(borrower)?.size === 0) {
-        borrowerClients.delete(borrower);
+      const clients = borrowerClients.get(borrower);
+      if (clients) {
+        for (const ci of clients) {
+          if (ci.res === res) {
+            clients.delete(ci);
+            break;
+          }
+        }
+        if (clients.size === 0) {
+          borrowerClients.delete(borrower);
+        }
       }
       this.unregisterUserClient(userKey, res);
       this.stopHeartbeatIfEmpty();
@@ -275,23 +300,23 @@ class EventStreamService {
 
   closeAllConnections(message = "Server shutting down"): void {
     this.stopHeartbeat();
-    const clients = new Set<SseClient>();
+    const clientsToClose = new Set<ClientInfo>();
 
     for (const borrowerClientSet of borrowerClients.values()) {
       for (const clientInfo of borrowerClientSet) {
-        clients.add(clientInfo);
+        clientsToClose.add(clientInfo);
       }
     }
 
     for (const clientInfo of adminClients) {
-      clients.add(clientInfo);
+      clientsToClose.add(clientInfo);
     }
 
     const shutdownPayload =
       `event: shutdown\n` +
       `data: ${JSON.stringify({ type: "shutdown", message })}\n\n`;
 
-    for (const clientInfo of clients) {
+    for (const clientInfo of clientsToClose) {
       try {
         clientInfo.res.write(shutdownPayload);
       } catch (err) {

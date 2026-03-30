@@ -721,15 +721,15 @@ export function useRepayLoan() {
   };
 
   return useMutation<
-    { txHash: string },
+    { unsignedTxXdr: string; networkPassphrase: string },
     Error,
     { loanId: number; amount: number; borrowerAddress: string },
     RepayContext
   >({
-    mutationFn: ({ loanId, amount }) =>
-      apiFetch<{ txHash: string }>(`/loans/${loanId}/repay`, {
+    mutationFn: ({ loanId, amount, borrowerAddress }) =>
+      apiFetch<{ unsignedTxXdr: string; networkPassphrase: string }>(`/loans/${loanId}/repay`, {
         method: "POST",
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ amount, borrowerPublicKey: borrowerAddress }),
       }),
 
     onMutate: async ({ loanId, amount, borrowerAddress }) => {
@@ -804,7 +804,7 @@ export function useDepositToPool() {
   type DepositContext = { previousPoolStats: unknown; previousDepositor: unknown };
 
   return useMutation<
-    { txHash: string },
+    { unsignedTxXdr: string; networkPassphrase: string },
     Error,
     { amount: number; depositorAddress: string; token: string },
     DepositContext
@@ -874,7 +874,7 @@ export function useWithdrawFromPool() {
   type WithdrawContext = { previousPoolStats: unknown; previousDepositor: unknown };
 
   return useMutation<
-    { txHash: string },
+    { unsignedTxXdr: string; networkPassphrase: string },
     Error,
     { amount: number; depositorAddress: string; token: string },
     WithdrawContext
@@ -938,6 +938,15 @@ export function useWithdrawFromPool() {
  */
 export async function submitPoolTransaction(signedTxXdr: string) {
   return apiFetch<{ txHash: string; status: string; resultXdr?: string }>("/pool/submit", {
+    method: "POST",
+    body: JSON.stringify({ signedTxXdr }),
+  });
+}
+/**
+ * Submits a signed loan transaction to the Stellar network.
+ */
+export async function submitLoanTransaction(signedTxXdr: string) {
+  return apiFetch<{ txHash: string; status: string; resultXdr?: string }>("/loans/submit", {
     method: "POST",
     body: JSON.stringify({ signedTxXdr }),
   });

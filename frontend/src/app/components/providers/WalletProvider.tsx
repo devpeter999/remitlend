@@ -225,10 +225,13 @@ export function WalletProvider({ children }: WalletProviderProps) {
 
   async function signTransaction(unsignedTxXdr: string): Promise<string> {
     const api = await loadFreighterApi();
-    const network = useWalletStore.getState().network?.name ?? "TESTNET";
+    const networkName = useWalletStore.getState().network?.name ?? "TESTNET";
+    const networkPassphrase = networkName === "PUBLIC" 
+      ? "Public Global Stellar Network ; October 2015"
+      : "Test SDF Network ; September 2015";
 
     const result = await api.signTransaction(unsignedTxXdr, {
-      network: network as any,
+      networkPassphrase,
     });
 
     if (typeof result === "string") {
@@ -239,8 +242,8 @@ export function WalletProvider({ children }: WalletProviderProps) {
       throw new Error(normalizeWalletError(result.error));
     }
 
-    if (result.signedTransaction) {
-      return result.signedTransaction;
+    if (result.signedTxXdr) {
+      return result.signedTxXdr;
     }
 
     throw new Error("Signing failed: No signed transaction returned.");

@@ -1,6 +1,20 @@
 import { jest } from "@jest/globals";
 import logger from "../utils/logger.js";
-import { DefaultChecker } from "../services/defaultChecker.js";
+const mockSetNotExists = jest.fn() as any;
+const mockCacheDelete = jest.fn() as any;
+
+mockSetNotExists.mockResolvedValue(true);
+mockCacheDelete.mockResolvedValue(undefined);
+
+jest.unstable_mockModule("../services/cacheService.js", () => ({
+  cacheService: {
+    setNotExists: mockSetNotExists,
+    delete: mockCacheDelete,
+    deletePattern: (jest.fn() as any).mockResolvedValue(undefined),
+  },
+}));
+
+const { DefaultChecker } = await import("../services/defaultChecker.js");
 
 describe("DefaultChecker", () => {
   const originalBatchSize = process.env.DEFAULT_CHECK_BATCH_SIZE;
@@ -61,13 +75,13 @@ describe("DefaultChecker", () => {
 
     const result = await checker.checkOverdueLoans();
 
-    expect(result.batches).toHaveLength(2);
-    expect(result.batches[0]).toMatchObject({
+    expect(result!.batches).toHaveLength(2);
+    expect(result!.batches[0]).toMatchObject({
       loanIds: [101],
       timedOut: true,
       error: "batch timed out after 10ms",
     });
-    expect(result.batches[1]).toMatchObject({
+    expect(result!.batches[1]).toMatchObject({
       loanIds: [102],
       txHash: "second-batch-hash",
       submitStatus: "PENDING",
